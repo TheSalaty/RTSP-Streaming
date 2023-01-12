@@ -247,10 +247,9 @@ public class Client {
               Level.FINE,
               "Socket receive buffer: " + RTPsocket.getReceiveBufferSize());
 
-          rtpHandler.setFecDecryptionEnabled(checkBoxFec.isSelected());
+          logger.log(Level.FINE, "Socket receive buffer: " + RTPsocket.getReceiveBufferSize());
 
-          // FEC-Handler
-          fec = new FecHandler(checkBoxFec.isSelected());
+          rtpHandler.setFecDecryptionEnabled(checkBoxFec.isSelected());
           // Init the play timer
           int timerDelay = FRAME_RATE; // use default delay
           if (framerate != 0) { // if information available, use that
@@ -500,38 +499,45 @@ public class Client {
     // TASK complete the statistics
     private void setStatistics(ReceptionStatistic rs) {
       DecimalFormat df = new DecimalFormat("###.###");
-      float ratio = 0f;
-      float recoveredPercent = 0f;
-      if (fec.getNrNotCorrected() != 0) {
-        ratio = (float) fec.getNrCorrected() / fec.getNrNotCorrected();
-      }
+      float ratio = 0;
 
-      if (fec.getPlayCounter() != 0) {
-        recoveredPercent = ((float) fec.getNrFramesLost() / fec.getPlayCounter()) * 100;
-      }
+      if (rs.playbackIndex == 0)
+        ratio = 0;
+      else
+        ratio = ((float) rs.packetsLost / (float) rs.playbackIndex) * 100;
 
       pufferLabel.setText(
           "Puffer: "
-              + "" //
+              + (rs.latestSequenceNumber - rs.playbackIndex)
+              + " Bytes //" //
               + " aktuelle Nr. / Summe empf.: "
-              + fec.getSeqNr() + " / " + fec.getNrReceived()
-              + "");
+              + rs.latestSequenceNumber
+              + " / "
+              + rs.receivedPackets);
       statsLabel.setText(
           "<html>Abspielzähler / verlorene Medienpakete // Bilder / verloren: "
-              + fec.getPlayCounter() + " / " + fec.getNrLost()
-              + " // "
-              + fec.getNrFramesRequested() + " / " + fec.getNrFramesLost()
+              + rs.playbackIndex + " / "
+              + rs.packetsLost + " // "
+              + rs.requestedFrames + " / "
+              + rs.framesLost
+              + " Ratio: "
+              + ratio + "%"
               + "<p/>"
               + "</html>");
+
+      if ((rs.packetsLost + rs.receivedPackets) == 0)
+        ratio = 0;
+      else
+        ratio = ((float) rs.correctedPackets / (float) (rs.packetsLost + (float) rs.receivedPackets)) * 100;
+
       fecLabel.setText(
           "FEC: korrigiert / nicht korrigiert: "
-              + fec.getNrCorrected()
-              + " / "
-              + fec.getNrNotCorrected()
+              + ""
+              + rs.correctedPackets + " / "
+              + rs.notCorrectedPackets
+              + ""
               + "  Ratio: "
-              + df.format(ratio)
-              + "  Restfehler: "
-              + df.format(recoveredPercent) + " %");
+              + ratio + "%");
     }
   }
 

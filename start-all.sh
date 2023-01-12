@@ -5,7 +5,7 @@
 
 port=8554
 #video=videos/htw.mjpeg
-video=htw.mjpeg
+video=test.mjpeg
 src=src
 bin=out/production/RTSP-Streaming
 
